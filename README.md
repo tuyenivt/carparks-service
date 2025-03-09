@@ -24,6 +24,12 @@ docker-compose up --build
 ```
 The API will be available at [http://localhost:8080](http://localhost:8080)
 
+### Data Ingestion
+Car Park Information Data: Call **Endpoint** `POST /v1/carparks/import-csv` only once time with CSV file.
+```shell
+curl -X POST http://localhost:8080/v1/carparks/import-csv -F "file=@HDBCarparkInformation.csv"
+```
+
 ## Development Instructions
 
 ### Running application
