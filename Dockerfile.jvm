@@ -1,0 +1,11 @@
+# Build stage
+FROM gradle:8-jdk21 AS build
+WORKDIR /workspace
+COPY --chown=gradle:gradle . .
+RUN gradle build -x test
+
+# Runtime stage
+FROM amazoncorretto:21-alpine AS runtime
+WORKDIR /app
+COPY --from=build /workspace/build/libs/*-runner.jar /app/application.jar
+CMD ["java", "-jar", "/app/application.jar"]

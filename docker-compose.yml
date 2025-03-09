@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  db:
+    image: postgis/postgis:17-3.5-alpine
+    environment:
+      POSTGRES_USER: carparksuser
+      POSTGRES_PASSWORD: carparkspassword
+      POSTGRES_DB: carparksdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - carparks-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.jvm
+    environment:
+      QUARKUS_DATASOURCE_URL: jdbc:postgresql://db:5432/carparksdb
+      QUARKUS_DATASOURCE_USERNAME: carparksuser
+      QUARKUS_DATASOURCE_PASSWORD: carparkspassword
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - carparks-network
+
+volumes:
+  postgres_data:
+
+networks:
+  carparks-network:
+    driver: bridge

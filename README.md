@@ -4,6 +4,38 @@
 This API-only application provides the nearest car parks with live parking availability based on user-provided coordinates.<br/>
 It ingests static car park data from a CSV file and updates availability from an external API.
 
+## Technologies
+- **Language**: Java 21
+- **Framework**: Quarkus
+- **Build Tool**: Gradle
+- **Database**: Postgres with PostGIS
+- **Deployment**: Docker, Docker Compose
+
+## Setup Instructions
+
+### Prerequisites
+- Java 21 such as [Amazon Corretto](https://docs.aws.amazon.com/corretto/latest/corretto-21-ug/downloads-list.html)
+- Docker and Docker Compose such as [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
+
+### Running with Docker Compose
+Build and start the containers:
+```shell
+docker-compose up --build
+```
+The API will be available at [http://localhost:8080](http://localhost:8080)
+
+## Development Instructions
+
+### Running application
+```shell
+./gradlew quarkusDev
+```
+
+### Running tests
+```shell
+./gradlew test
+```
+
 ## Thought Process - Analysis
 This application provides availability lots nearest distance car parks from the user's current location, a high-throughput application.<br/>
 
