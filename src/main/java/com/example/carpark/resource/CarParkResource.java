@@ -9,6 +9,9 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.slf4j.Logger;
@@ -22,6 +25,7 @@ import java.util.List;
 @Path("/v1/carparks")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "Car Park V1", description = "Operations related to car parks")
 public class CarParkResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(CarParkResource.class);
 
@@ -36,6 +40,9 @@ public class CarParkResource {
     @Path("/import-csv")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @WithTransaction
+    @Operation(summary = "Import car park data from CSV", description = "Ingests car park data from a provided CSV file")
+    @APIResponse(responseCode = "202", description = "CSV data imported successfully")
+    @APIResponse(responseCode = "500", description = "CSV import failed")
     public Uni<Response> importCsvData(@RestForm("file") FileUpload csvFile) {
         return Uni.createFrom().item(() -> {
                     try {
@@ -62,6 +69,10 @@ public class CarParkResource {
     @GET
     @Path("/nearest")
     @WithTransaction
+    @Operation(summary = "Get nearest car parks", description = "Returns the nearest car parks with available parking lots based on user-provided coordinates")
+    @APIResponse(responseCode = "200", description = "List of nearest car parks")
+    @APIResponse(responseCode = "400", description = "Missing or invalid latitude/longitude")
+    @APIResponse(responseCode = "500", description = "Unexpected server issues")
     public Uni<List<CarParkDto>> getNearestCarParks(
             @QueryParam("latitude") Double latitude,
             @QueryParam("longitude") Double longitude,
