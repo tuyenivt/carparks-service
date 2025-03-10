@@ -20,6 +20,7 @@ dependencies {
     implementation 'io.quarkus:quarkus-jdbc-postgresql'
     implementation 'io.quarkus:quarkus-reactive-pg-client'
     implementation 'io.quarkus:quarkus-arc'
+    implementation "io.smallrye.reactive:smallrye-mutiny-vertx-web-client"
     implementation "com.opencsv:opencsv:${opencsvVersion}"
     implementation "org.locationtech.proj4j:proj4j:${locationtechProj4jVersion}" // SVY21 to WGS84 conversion
     implementation "org.locationtech.proj4j:proj4j-epsg:${locationtechProj4jVersion}"

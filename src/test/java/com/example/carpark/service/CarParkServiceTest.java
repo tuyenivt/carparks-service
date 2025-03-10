@@ -20,11 +20,14 @@ class CarParkServiceTest {
     @InjectMock
     ConverterUtil converterUtil;
 
+    @InjectMock
+    CarParkAvailabilityService carParkAvailabilityService;
+
     CarParkService carParkService;
 
     @BeforeEach
     void setUp() {
-        carParkService = new CarParkService(carParkRepository, converterUtil);
+        carParkService = new CarParkService(carParkRepository, converterUtil, carParkAvailabilityService);
     }
 
     @Test

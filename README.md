@@ -24,11 +24,12 @@ docker-compose up --build
 ```
 The API will be available at [http://localhost:8080](http://localhost:8080)
 
-### Data Ingestion
-Car Park Information Data: Call **Endpoint** `POST /v1/carparks/import-csv` only once time with CSV file.
+### Data Ingestion and Updates
+- **Car Park Information Data**: Call **Endpoint** `POST /v1/carparks/import-csv` only once time with CSV file.
 ```shell
 curl -X POST http://localhost:8080/v1/carparks/import-csv -F "file=@HDBCarparkInformation.csv"
 ```
+- **Car Park Availability Live Update**: Scheduled task `CarParkService.updateAvailabilityScheduler` run every 2 minutes to fetch and update availability.
 
 ## Development Instructions
 

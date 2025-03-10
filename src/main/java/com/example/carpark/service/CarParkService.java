@@ -2,11 +2,13 @@ package com.example.carpark.service;
 
 import com.example.carpark.entity.CarPark;
 import com.example.carpark.exception.CarParkException;
-import com.example.carpark.model.CarParkInfo;
+import com.example.carpark.model.CarParkInformation;
 import com.example.carpark.repository.CarParkRepository;
 import com.example.carpark.util.ConverterUtil;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,11 +25,14 @@ public class CarParkService {
 
     private final CarParkRepository carParkRepository;
     private final ConverterUtil converterUtil;
+    private final CarParkAvailabilityService carParkAvailabilityService;
 
     @Inject
-    public CarParkService(CarParkRepository carParkRepository, ConverterUtil converterUtil) {
+    public CarParkService(CarParkRepository carParkRepository, ConverterUtil converterUtil,
+                          CarParkAvailabilityService carParkAvailabilityService) {
         this.carParkRepository = carParkRepository;
         this.converterUtil = converterUtil;
+        this.carParkAvailabilityService = carParkAvailabilityService;
     }
 
     public Uni<Void> ingestCsvData(String csvContent) {
@@ -36,26 +41,39 @@ public class CarParkService {
             LOGGER.info("Total rows read (excluding header): {}", rows.size());
 
             return Uni.combine().all().unis(
-                    rows.stream().map(row -> {
-                        var carParkInfo = CarParkInfo.fromCsvRow(row);
-                        var carParkNo = carParkInfo.getCarParkNo();
-                        LOGGER.info("Processing car park: {}", carParkNo);
-                        var wgs84 = converterUtil.convertSVY21ToWGS84(carParkInfo.getXCoord(), carParkInfo.getYCoord());
-                        var carPark = CarPark.builder()
-                                .carParkNo(carParkNo)
-                                .address(carParkInfo.getAddress())
-                                .latitude(wgs84[0])
-                                .longitude(wgs84[1])
-                                .lastUpdated(new Timestamp(System.currentTimeMillis()))
-                                .build();
-                        LOGGER.info("Car park prepared: {} - address: {}", carParkNo, carPark.address);
-                        return carParkRepository.persist(carPark)
-                                .invoke(() -> LOGGER.info("Ingested new car park: {}", carParkNo));
-                    }).toList()
+                    rows.stream().map(row -> saveCarPark(CarParkInformation.fromCsvRow(row))).toList()
             ).discardItems();
         } catch (IOException | CsvException e) {
             LOGGER.error("Failed to ingest CSV data: {}", e.getMessage());
             throw new CarParkException("CSV ingestion failed", e);
         }
+    }
+
+    private Uni<CarPark> saveCarPark(CarParkInformation carParkInfo) {
+        var carParkNo = carParkInfo.getCarParkNo();
+        LOGGER.info("Processing car park: {}", carParkNo);
+        var wgs84 = converterUtil.convertSVY21ToWGS84(carParkInfo.getXCoord(), carParkInfo.getYCoord());
+        var carPark = CarPark.builder()
+                .carParkNo(carParkNo)
+                .address(carParkInfo.getAddress())
+                .latitude(wgs84[0])
+                .longitude(wgs84[1])
+                .lastUpdated(new Timestamp(System.currentTimeMillis()))
+                .build();
+        LOGGER.info("Car park prepared: {} - address: {}", carParkNo, carPark.address);
+        return carParkRepository.persist(carPark)
+                .invoke(() -> LOGGER.info("Ingested new car park: {}", carParkNo));
+    }
+
+    /**
+     * <p>Scheduled task to update car park availability every 2 minutes</p>
+     *
+     * <p>From API Docs https://data.gov.sg/datasets/d_ca933a644e55d34fe21f28b8052fac63/view</p>
+     * <p>Recommended that this endpoint be called every minute, so we can update every 2 minutes to be safe</p>
+     */
+    @Scheduled(every = "2m")
+    @WithTransaction
+    public Uni<Void> updateAvailabilityScheduler() {
+        return carParkAvailabilityService.updateAvailability();
     }
 }

@@ -9,14 +9,14 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CarParkInfo {
+public class CarParkInformation {
     private String carParkNo;
     private String address;
     private double xCoord;
     private double yCoord;
 
-    public static CarParkInfo fromCsvRow(String[] row) {
-        return CarParkInfo.builder()
+    public static CarParkInformation fromCsvRow(String[] row) {
+        return CarParkInformation.builder()
                 .carParkNo(row[0])
                 .address(row[1])
                 .xCoord(Double.parseDouble(row[2]))
