@@ -30,44 +30,30 @@ public class CarParkResource {
         this.carParkService = carParkService;
     }
 
-    @GET
-    @Path("/health")
-    public String health() {
-        return "OK";
-    }
-
     @POST
     @Path("/import-csv")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @WithTransaction
     public Uni<Response> importCsvData(@RestForm("file") FileUpload csvFile) {
         return Uni.createFrom().item(() -> {
-            try {
-                return Files.readString(csvFile.uploadedFile(), StandardCharsets.UTF_8);
-            } catch (IOException e) {
-                throw new CarParkException("Failed to read CSV file", e);
-            }
-        })
-        .flatMap(carParkService::ingestCsvData)
-        .map(result -> Response
-                .accepted()
-                .entity("CSV data imported successfully")
-                .build())
-        .onFailure(IOException.class)
-        .recoverWithItem(e -> {
-            LOGGER.error("Failed to read CSV file: {}", e.getMessage());
-            return Response
-                    .status(Response.Status.BAD_REQUEST)
-                    .entity("Failed to process CSV file")
-                    .build();
-        })
-        .onFailure(CarParkException.class)
-        .recoverWithItem(e -> {
-            LOGGER.error("Failed to import CSV data: {}", e.getMessage());
-            return Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("CSV import failed: " + e.getMessage())
-                    .build();
-        });
+                    try {
+                        return Files.readString(csvFile.uploadedFile(), StandardCharsets.UTF_8);
+                    } catch (IOException e) {
+                        throw new CarParkException("Failed to read CSV file", e);
+                    }
+                })
+                .flatMap(carParkService::ingestCsvData)
+                .map(result -> Response
+                        .accepted()
+                        .entity("CSV data imported successfully")
+                        .build())
+                .onFailure(CarParkException.class)
+                .recoverWithItem(e -> {
+                    LOGGER.error("Failed to import CSV data: {}", e.getMessage());
+                    return Response
+                            .status(Response.Status.INTERNAL_SERVER_ERROR)
+                            .entity("CSV import failed: " + e.getMessage())
+                            .build();
+                });
     }
 }
