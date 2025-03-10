@@ -1,6 +1,7 @@
 package com.example.carpark.resource;
 
 import com.example.carpark.exception.CarParkException;
+import com.example.carpark.model.CarParkDto;
 import com.example.carpark.service.CarParkService;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.List;
 
 @Path("/v1/carparks")
 @Produces(MediaType.APPLICATION_JSON)
@@ -55,5 +57,49 @@ public class CarParkResource {
                             .entity("CSV import failed: " + e.getMessage())
                             .build();
                 });
+    }
+
+    @GET
+    @Path("/nearest")
+    @WithTransaction
+    public Uni<List<CarParkDto>> getNearestCarParks(
+            @QueryParam("latitude") Double latitude,
+            @QueryParam("longitude") Double longitude,
+            @QueryParam("page") @DefaultValue("1") int page,
+            @QueryParam("per_page") @DefaultValue("10") int perPage) {
+        LOGGER.info("Received request: latitude={}, longitude={}, page={}, per_page={}", latitude, longitude, page, perPage);
+
+        validateGetNearestCarParksInputs(latitude, longitude, page, perPage);
+
+        return carParkService.getNearestCarParks(latitude, longitude, page, perPage)
+                .onItem().transform(carParks -> carParks.stream()
+                        .map(CarParkDto::fromEntity).toList())
+                .invoke(carParkDtos -> LOGGER.info("Returning {} car parks", carParkDtos.size()));
+    }
+
+    private void validateGetNearestCarParksInputs(Double latitude, Double longitude, int page, int perPage) {
+        if (latitude == null || longitude == null) {
+            LOGGER.warn("Missing coordinates: latitude={}, longitude={}", latitude, longitude);
+            throw new WebApplicationException(
+                    Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Missing latitude or longitude")
+                            .build());
+        }
+
+        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+            LOGGER.warn("Invalid coordinates: latitude={}, longitude={}", latitude, longitude);
+            throw new WebApplicationException(
+                    Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Latitude must be between -90 and 90, longitude between -180 and 180")
+                            .build());
+        }
+
+        if (page < 1 || perPage < 1) {
+            LOGGER.warn("Invalid pagination: page={}, per_page={}", page, perPage);
+            throw new WebApplicationException(
+                    Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Page and per_page must be positive integers")
+                            .build());
+        }
     }
 }

@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.StringReader;
 import java.sql.Timestamp;
+import java.util.List;
 
 @ApplicationScoped
 public class CarParkService {
@@ -75,5 +76,10 @@ public class CarParkService {
     @WithTransaction
     public Uni<Void> updateAvailabilityScheduler() {
         return carParkAvailabilityService.updateAvailability();
+    }
+
+    public Uni<List<CarPark>> getNearestCarParks(double latitude, double longitude, int page, int perPage) {
+        var offset = (page - 1) * perPage;
+        return carParkRepository.findNearestWithAvailability(latitude, longitude, perPage, offset);
     }
 }
