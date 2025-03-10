@@ -33,7 +33,7 @@ curl -X POST http://localhost:8080/v1/carparks/import-csv -F "file=@HDBCarparkIn
 
 ## Development Instructions
 
-### Running application
+### Running application (Live Coding)
 ```shell
 ./gradlew quarkusDev
 ```
