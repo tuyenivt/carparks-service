@@ -6,7 +6,7 @@ It ingests static car park data from a CSV file and updates availability from an
 
 ## Technologies
 - **Language**: Java 21
-- **Framework**: Quarkus
+- **Framework**: Quarkus (reactive, high-performance, optimized for high throughput, native build, scalable cloud-native)
 - **Build Tool**: Gradle
 - **Database**: Postgres with PostGIS
 - **Deployment**: Docker, Docker Compose
@@ -23,6 +23,8 @@ Build and start the containers:
 docker-compose up --build
 ```
 The API will be available at [http://localhost:8080](http://localhost:8080)
+
+Note: Because the application start fast, then sometimes, the application starts before the database is ready. If you see a database connection error, restart the application.
 
 ### OpenAPI Endpoint
 ```shell

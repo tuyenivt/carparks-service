@@ -2,10 +2,10 @@
 FROM gradle:8-jdk21 AS build
 WORKDIR /workspace
 COPY --chown=gradle:gradle . .
-RUN gradle build -x test
+RUN gradle build -x test -Dquarkus.package.jar.type=uber-jar
 
 # Runtime stage
 FROM amazoncorretto:21-alpine AS runtime
 WORKDIR /app
-COPY --from=build /workspace/build/libs/*-runner.jar /app/application.jar
+COPY --from=build /workspace/build/*-runner.jar /app/application.jar
 CMD ["java", "-jar", "/app/application.jar"]
