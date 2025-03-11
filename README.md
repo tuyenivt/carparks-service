@@ -11,38 +11,36 @@ It ingests static car park data from a CSV file and updates availability from an
 - **Database**: Postgres with PostGIS
 - **Deployment**: Docker, Docker Compose
 
-## Setup Instructions
+## How to Run the Application
 
 ### Prerequisites
-- Java 21 such as [Amazon Corretto](https://docs.aws.amazon.com/corretto/latest/corretto-21-ug/downloads-list.html)
-- Docker and Docker Compose such as [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
+- Docker and Docker Compose such as [Docker Desktop](https://docs.docker.com/get-started/introduction/get-docker-desktop/)
 
-### Running with Docker Compose
+### Running Application with Docker Compose
 Build and start the containers:
 ```shell
 docker-compose up --build
 ```
 The API will be available at [http://localhost:8080](http://localhost:8080)
 
-Note: Because the application start fast, then sometimes, the application starts before the database is ready. If you see a database connection error, restart the application.
-
-### OpenAPI Endpoint
+### Accessing the OpenAPI Specification
+This endpoint provides the OpenAPI specification for the API in JSON format, detailing available endpoints, parameters, and schemas.
 ```shell
 curl http://localhost:8080/api/openapi
 ```
 
-### Data Ingestion and Updates
+### Initialing Car Park Information Data and Availability Updates
 - **Car Park Information Data**: Call **Endpoint** `POST /v1/carparks/import-csv` only once time with CSV file (same this folder or download from [HDB Carpark Information](https://data.gov.sg/datasets/d_23f946fa557947f93a8043bbef41dd09/view)).
 ```shell
 curl -X POST http://localhost:8080/v1/carparks/import-csv -F "file=@HDBCarparkInformation.csv"
 ```
 - **Car Park Availability Live Update**: Scheduled task `CarParkService.updateAvailabilityScheduler` run every 2 minutes to fetch and update availability.<br/>
-If you run the application first time, static data is empty and nothing updated, you need import csv first and wait more 2 minutes for scheduled task update availability.
+If you run the application first time, static data is empty and nothing updated, after import csv and let wait more 2 minutes for scheduled task update availability (you can view console log to see data updating).
 
-## Find Nearest Availability Car Parks Based On User-Provided Coordinates
+### Accessing API Find Nearest Availability Car Parks Based On User-Provided Coordinates
 **Endpoint**: `GET /v1/carparks/nearest`
 
-Returns the nearest car parks with available parking lots.
+Returns the nearest car parks with available parking lots. (required Car Park Information Data imported and Car Park Availability Data updated)
 
 Query Parameters
 - **latitude (required)**: Latitude of the user's location (-90 to 90).
@@ -85,6 +83,9 @@ Error Responses
 
 ## Development Instructions
 
+### Prerequisites
+- JDK 21 such as [Amazon Corretto](https://docs.aws.amazon.com/corretto/latest/corretto-21-ug/downloads-list.html)
+
 ### Running application (Live Coding)
 ```shell
 ./gradlew quarkusDev
@@ -104,7 +105,6 @@ Java Virtual Thread comparable with goroutines and modern frameworks such as Qua
 Java also has a large community, library, ecosystem, enterprise support, legacy integration, and mature testing support (Go good support test but more manual).<br/>
 I chose Java because I am familiar with Java over Go, but I still want the application to run fast, high-throughput adaptive, and fast bootstrap for horizontal scale cloud native.<br/>
 I choose Quarkus because it is fast, supports native build, supports GraalVM for native build, supports Java 21, and build-in reactive programming for high throughput.<br/>
-A downside of Quarkus is that the native build time takes 10-15 minutes, but the native build is only required for UAT load test release or production release; we can mitigate this with a pre-build native file before release or a parallel native build pipeline during CI/CD doing the test.<br/>
 
 For database choice, this main feature is calculating the distance between 2 coordinates.<br/>
 Postgres with PostGIS or MySQL 8 Point also supports geospatial data, but MySQL 8 just basic support and is not fast and accurate comparable with Postgres with PostGIS, which is mature for geospatial data, supports geospatial query, indexing, and calculation.<br/>

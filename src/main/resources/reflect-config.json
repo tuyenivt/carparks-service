@@ -1,0 +1,41 @@
+[
+  {
+    "name": "org.locationtech.proj4j.proj.TransverseMercatorProjection",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.locationtech.proj4j.proj.LongLatProjection",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.locationtech.proj4j.Registry",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.example.carpark.model.CarParkAvailability",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.example.carpark.model.CarParkAvailability$CarParkItem",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.example.carpark.model.CarParkAvailability$CarParkData",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.example.carpark.model.CarParkAvailability$CarParkInfo",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  }
+]
