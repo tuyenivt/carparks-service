@@ -23,8 +23,7 @@ public class CarParkRepository implements PanacheRepository<CarPark> {
                 SELECT car_park_no, address, latitude, longitude, total_lots, available_lots, last_updated
                 FROM car_parks
                 WHERE available_lots > 0
-                ORDER BY ST_Distance(location, ST_SetSRID(ST_Point(:longitude, :latitude), 4326)),
-                         location <-> ST_SetSRID(ST_Point(:longitude, :latitude), 4326)
+                ORDER BY location <-> ST_SetSRID(ST_Point(:longitude, :latitude), 4326)
                 LIMIT :limit
                 OFFSET :offset
                 """;
