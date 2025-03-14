@@ -9,6 +9,7 @@ import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.scheduler.Scheduled;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -38,12 +39,12 @@ public class CarParkService {
 
     public Uni<Void> ingestCsvData(String csvContent) {
         try (var csvReader = new CSVReaderBuilder(new StringReader(csvContent)).withSkipLines(1).build()) {
-            var rows = csvReader.readAll();
-            LOGGER.info("Total rows read (excluding header): {}", rows.size());
-
-            return Uni.combine().all().unis(
-                    rows.stream().map(row -> saveCarPark(CarParkInformation.fromCsvRow(row))).toList()
-            ).discardItems();
+            return Multi.createFrom().items(csvReader.readAll().stream())
+                    .onItem().transform(CarParkInformation::fromCsvRow)
+                    .onItem().transformToUniAndMerge(this::saveCarPark)
+                    .onItem().invoke(carPark -> LOGGER.info("Saved car park: {}", carPark.carParkNo))
+                    .onItem().ignore()
+                    .toUni();
         } catch (IOException | CsvException e) {
             LOGGER.error("Failed to ingest CSV data: {}", e.getMessage());
             throw new CarParkException("CSV ingestion failed", e);
@@ -61,7 +62,6 @@ public class CarParkService {
                 .longitude(wgs84[1])
                 .lastUpdated(new Timestamp(System.currentTimeMillis()))
                 .build();
-        LOGGER.info("Car park prepared: {} - address: {}", carParkNo, carPark.address);
         return carParkRepository.persist(carPark)
                 .invoke(() -> LOGGER.info("Ingested new car park: {}", carParkNo));
     }
