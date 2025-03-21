@@ -19,6 +19,7 @@ dependencies {
     implementation 'io.quarkus:quarkus-scheduler'
     implementation 'io.quarkus:quarkus-jdbc-postgresql'
     implementation 'io.quarkus:quarkus-reactive-pg-client'
+    implementation 'io.quarkus:quarkus-redis-client'
     implementation 'io.quarkus:quarkus-arc'
     implementation "io.smallrye.reactive:smallrye-mutiny-vertx-web-client"
     implementation "com.opencsv:opencsv:${opencsvVersion}"

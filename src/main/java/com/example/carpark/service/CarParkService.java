@@ -28,13 +28,15 @@ public class CarParkService {
     private final CarParkRepository carParkRepository;
     private final ConverterUtil converterUtil;
     private final CarParkAvailabilityService carParkAvailabilityService;
+    private final RedisService redisService;
 
     @Inject
     public CarParkService(CarParkRepository carParkRepository, ConverterUtil converterUtil,
-                          CarParkAvailabilityService carParkAvailabilityService) {
+                          CarParkAvailabilityService carParkAvailabilityService, RedisService redisService) {
         this.carParkRepository = carParkRepository;
         this.converterUtil = converterUtil;
         this.carParkAvailabilityService = carParkAvailabilityService;
+        this.redisService = redisService;
     }
 
     public Uni<Void> ingestCsvData(String csvContent) {
@@ -75,7 +77,19 @@ public class CarParkService {
     @Scheduled(every = "2m")
     @WithTransaction
     public Uni<Void> updateAvailabilityScheduler() {
-        return carParkAvailabilityService.updateAvailability();
+        var expireSeconds = 120; // 2 minutes ~ @Scheduled(every = "2m")
+        return redisService.tryLockUpdateAvailabilityScheduler(expireSeconds)
+                .flatMap(locked -> {
+                    if (Boolean.TRUE.equals(locked)) {
+                        return carParkAvailabilityService.updateAvailability().flatMap(v -> {
+                            LOGGER.info("Availability updated successfully");
+                            return redisService.releaseLockUpdateAvailabilityScheduler().replaceWithVoid();
+                        });
+                    } else {
+                        LOGGER.info("Another instance is already updating availability");
+                        return Uni.createFrom().voidItem();
+                    }
+                });
     }
 
     public Uni<List<CarPark>> getNearestCarParks(double latitude, double longitude, int page, int perPage) {
