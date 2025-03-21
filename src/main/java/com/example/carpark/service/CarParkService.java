@@ -9,7 +9,6 @@ import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.scheduler.Scheduled;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -40,35 +39,50 @@ public class CarParkService {
     }
 
     public Uni<Void> ingestCsvData(String csvContent) {
-        try (var csvReader = new CSVReaderBuilder(new StringReader(csvContent)).withSkipLines(1).build()) {
-            return Multi.createFrom().items(csvReader.readAll().stream())
-                    .onItem().transform(CarParkInformation::fromCsvRow)
-                    .onItem().transformToUniAndConcatenate(this::saveCarPark)
-                    .onItem().invoke(carPark -> LOGGER.info("Saved car park: {}", carPark.carParkNo))
-                    .onItem().ignore()
-                    .toUni();
-        } catch (IOException | CsvException e) {
-            LOGGER.error("Failed to ingest CSV data: {}", e.getMessage());
-            throw new CarParkException("CSV ingestion failed", e);
-        }
+        return loadCsvData(csvContent)
+                .flatMap(this::filterNonExistingCarParks)
+                .flatMap(this::saveCarParksInBatch);
     }
 
-    private Uni<CarPark> saveCarPark(CarParkInformation carParkInfo) {
-        var carParkNo = carParkInfo.getCarParkNo();
-        LOGGER.info("Processing car park: {}", carParkNo);
-        return carParkRepository.findByCarParkNo(carParkNo)
-                .onItem().ifNull().switchTo(() -> {
-                    var wgs84 = converterUtil.convertSVY21ToWGS84(carParkInfo.getXCoord(), carParkInfo.getYCoord());
-                    var carPark = CarPark.builder()
-                            .carParkNo(carParkNo)
-                            .address(carParkInfo.getAddress())
-                            .latitude(wgs84[0])
-                            .longitude(wgs84[1])
-                            .lastUpdated(new Timestamp(System.currentTimeMillis()))
-                            .build();
-                    return carParkRepository.persist(carPark)
-                            .invoke(() -> LOGGER.info("Ingested new car park: {}", carParkNo));
-                });
+    private Uni<List<CarParkInformation>> loadCsvData(String csvContent) {
+        return Uni.createFrom().item(() -> {
+            try (var csvReader = new CSVReaderBuilder(new StringReader(csvContent)).withSkipLines(1).build()) {
+                return csvReader.readAll().stream().map(CarParkInformation::fromCsvRow).toList();
+            } catch (IOException | CsvException e) {
+                throw new CarParkException("Failed to parse CSV data", e);
+            }
+        });
+    }
+
+    private Uni<List<CarParkInformation>> filterNonExistingCarParks(List<CarParkInformation> carParkInfos) {
+        if (carParkInfos.isEmpty()) {
+            return Uni.createFrom().item(List.of());
+        }
+
+        return carParkRepository.findByCarParkNos(carParkInfos.stream().map(CarParkInformation::getCarParkNo).toList())
+                .map(carParks -> carParks.stream().map(carPark -> carPark.carParkNo).toList())
+                .map(existingNos -> carParkInfos.stream().filter(cp -> !existingNos.contains(cp.getCarParkNo())).toList());
+    }
+
+    private Uni<Void> saveCarParksInBatch(List<CarParkInformation> carParkInfos) {
+        if (carParkInfos.isEmpty()) {
+            return Uni.createFrom().voidItem();
+        }
+
+        var entities = carParkInfos.stream().map(this::toCarParkEntity).toList();
+        return carParkRepository.persist(carParkInfos.stream().map(this::toCarParkEntity).toList())
+                .invoke(() -> LOGGER.info("Batch saved {} car parks", entities.size()));
+    }
+
+    private CarPark toCarParkEntity(CarParkInformation carParkInfo) {
+        var wgs84 = converterUtil.convertSVY21ToWGS84(carParkInfo.getXCoord(), carParkInfo.getYCoord());
+        return CarPark.builder()
+                .carParkNo(carParkInfo.getCarParkNo())
+                .address(carParkInfo.getAddress())
+                .latitude(wgs84[0])
+                .longitude(wgs84[1])
+                .lastUpdated(new Timestamp(System.currentTimeMillis()))
+                .build();
     }
 
     /**
