@@ -28,6 +28,13 @@ This endpoint provides the OpenAPI specification for the API in JSON format, det
 ```shell
 curl http://localhost:8080/api/openapi
 ```
+Open API UI: http://localhost:8080/q/swagger-ui
+
+### Accessing Health Check and Metrics endpoints
+```shell
+curl http://localhost:8080/q/health
+curl http://localhost:8080/q/metrics
+```
 
 ### Initialing Car Park Information Data and Availability Updates
 - **Car Park Information Data**: Call **Endpoint** `POST /v1/carparks/import-csv` only once time with CSV file (same this folder or download from [HDB Carpark Information](https://data.gov.sg/datasets/d_23f946fa557947f93a8043bbef41dd09/view)).
