@@ -43,7 +43,7 @@ public class CarParkService {
         try (var csvReader = new CSVReaderBuilder(new StringReader(csvContent)).withSkipLines(1).build()) {
             return Multi.createFrom().items(csvReader.readAll().stream())
                     .onItem().transform(CarParkInformation::fromCsvRow)
-                    .onItem().transformToUniAndMerge(this::saveCarPark)
+                    .onItem().transformToUniAndConcatenate(this::saveCarPark)
                     .onItem().invoke(carPark -> LOGGER.info("Saved car park: {}", carPark.carParkNo))
                     .onItem().ignore()
                     .toUni();
@@ -56,16 +56,19 @@ public class CarParkService {
     private Uni<CarPark> saveCarPark(CarParkInformation carParkInfo) {
         var carParkNo = carParkInfo.getCarParkNo();
         LOGGER.info("Processing car park: {}", carParkNo);
-        var wgs84 = converterUtil.convertSVY21ToWGS84(carParkInfo.getXCoord(), carParkInfo.getYCoord());
-        var carPark = CarPark.builder()
-                .carParkNo(carParkNo)
-                .address(carParkInfo.getAddress())
-                .latitude(wgs84[0])
-                .longitude(wgs84[1])
-                .lastUpdated(new Timestamp(System.currentTimeMillis()))
-                .build();
-        return carParkRepository.persist(carPark)
-                .invoke(() -> LOGGER.info("Ingested new car park: {}", carParkNo));
+        return carParkRepository.findByCarParkNo(carParkNo)
+                .onItem().ifNull().switchTo(() -> {
+                    var wgs84 = converterUtil.convertSVY21ToWGS84(carParkInfo.getXCoord(), carParkInfo.getYCoord());
+                    var carPark = CarPark.builder()
+                            .carParkNo(carParkNo)
+                            .address(carParkInfo.getAddress())
+                            .latitude(wgs84[0])
+                            .longitude(wgs84[1])
+                            .lastUpdated(new Timestamp(System.currentTimeMillis()))
+                            .build();
+                    return carParkRepository.persist(carPark)
+                            .invoke(() -> LOGGER.info("Ingested new car park: {}", carParkNo));
+                });
     }
 
     /**
