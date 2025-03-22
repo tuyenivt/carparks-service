@@ -41,11 +41,11 @@ class CarParkServiceTest {
         var csvContent = "carParkNo,address,xCoord,yCoord\nACB,BLK 270/271 ALBERT CENTRE BASEMENT CAR PARK,30314.7936,31490.4942";
 
         when(converterUtil.convertSVY21ToWGS84(30314.7936, 31490.4942)).thenReturn(new double[]{1.0, 1.0});
-        when(carParkRepository.persist(any(CarPark.class))).thenReturn(Uni.createFrom().nullItem());
+        when(carParkRepository.persist(anyList())).thenReturn(Uni.createFrom().voidItem());
 
         carParkService.ingestCsvData(csvContent).await().indefinitely();
 
-        verify(carParkRepository, times(1)).persist(any(CarPark.class));
+        verify(carParkRepository, times(1)).persist(anyList());
     }
 
     @Test

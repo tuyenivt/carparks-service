@@ -35,7 +35,7 @@ public class RedisService {
                 .arg("EX")  // Set an expiration time.
                 .arg(String.valueOf(expireSeconds));
         return redisClient.send(request)
-                .onItem().transform(response -> {
+                .map(response -> {
                     if (response != null && "OK".equalsIgnoreCase(response.toString())) {
                         LOGGER.info("Lock acquired with key: {}", LOCK_KEY);
                         return true;
@@ -53,7 +53,7 @@ public class RedisService {
      */
     public Uni<Boolean> releaseLockUpdateAvailabilityScheduler() {
         return redisClient.send(Request.cmd(Command.DEL).arg(LOCK_KEY))
-                .onItem().transform(response -> {
+                .map(response -> {
                     if (response != null && response.toInteger() > 0) {
                         LOGGER.info("Lock released successfully with key {}", LOCK_KEY);
                         return true;

@@ -83,8 +83,7 @@ public class CarParkResource {
         validateGetNearestCarParksInputs(latitude, longitude, page, perPage);
 
         return carParkService.getNearestCarParks(latitude, longitude, page, perPage)
-                .onItem().transform(carParks -> carParks.stream()
-                        .map(CarParkDto::fromEntity).toList())
+                .map(carParks -> carParks.stream().map(CarParkDto::fromEntity).toList())
                 .invoke(carParkDtos -> LOGGER.info("Returning {} car parks", carParkDtos.size()));
     }
 
