@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory;
 import java.net.HttpURLConnection;
 import java.sql.Timestamp;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class CarParkAvailabilityService {
@@ -80,29 +80,11 @@ public class CarParkAvailabilityService {
     }
 
     Map<String, CarParkLotInfo> parseAvailability(CarParkAvailability carParkAvailability) {
-        var availability = new HashMap<String, CarParkLotInfo>();
-        for (var carParkData : carParkAvailability.getItems().getFirst().getCarParkData()) {
-            var totalLots = carParkData.getCarParkInfo().stream()
-                    .mapToInt(info -> parseIntQuietly(info.getTotalLots()))
-                    .sum();
-            var totalAvailableLots = carParkData.getCarParkInfo().stream()
-                    .mapToInt(info -> parseIntQuietly(info.getLotsAvailable()))
-                    .sum();
-            var carParkLotInfo = CarParkLotInfo.builder()
-                    .carParkNo(carParkData.getCarParkNumber())
-                    .totalLots(totalLots)
-                    .availableLots(totalAvailableLots)
-                    .build();
-            availability.put(carParkLotInfo.getCarParkNo(), carParkLotInfo);
-        }
-        return availability;
-    }
-
-    private int parseIntQuietly(String str) {
-        try {
-            return Integer.parseInt(str);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+        return carParkAvailability.getItems().getFirst().getCarParkData().parallelStream()
+                .collect(Collectors.toMap(
+                        CarParkAvailability.CarParkData::getCarParkNumber,
+                        CarParkLotInfo::fromCarParkData,
+                        CarParkLotInfo::merge
+                ));
     }
 }
