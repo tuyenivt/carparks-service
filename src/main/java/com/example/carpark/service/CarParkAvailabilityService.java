@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.HttpURLConnection;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -74,7 +75,8 @@ public class CarParkAvailabilityService {
                         throw new CarParkException("Failed to parse JSON response", e);
                     }
                 })
-                .invoke(() -> LOGGER.info("Fetched availability data successfully"));
+                .invoke(() -> LOGGER.info("Fetched availability data successfully"))
+                .onFailure().retry().withBackOff(Duration.ofMillis(100), Duration.ofMillis(1000)).atMost(3);
     }
 
     Map<String, CarParkLotInfo> parseAvailability(CarParkAvailability carParkAvailability) {
