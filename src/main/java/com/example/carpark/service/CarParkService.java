@@ -1,12 +1,9 @@
 package com.example.carpark.service;
 
 import com.example.carpark.entity.CarPark;
-import com.example.carpark.exception.CarParkException;
 import com.example.carpark.model.CarParkInformation;
 import com.example.carpark.repository.CarParkRepository;
 import com.example.carpark.util.ConverterUtil;
-import com.opencsv.CSVReaderBuilder;
-import com.opencsv.exceptions.CsvException;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
@@ -15,8 +12,6 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.StringReader;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -38,20 +33,9 @@ public class CarParkService {
         this.redisService = redisService;
     }
 
-    public Uni<Void> ingestCsvData(String csvContent) {
-        return loadCsvData(csvContent)
-                .flatMap(this::filterNonExistingCarParks)
+    public Uni<Void> ingestCarParkInfos(List<CarParkInformation> carParkInfos) {
+        return filterNonExistingCarParks(carParkInfos)
                 .flatMap(this::saveCarParksInBatch);
-    }
-
-    private Uni<List<CarParkInformation>> loadCsvData(String csvContent) {
-        return Uni.createFrom().item(() -> {
-            try (var csvReader = new CSVReaderBuilder(new StringReader(csvContent)).withSkipLines(1).build()) {
-                return csvReader.readAll().stream().map(CarParkInformation::fromCsvRow).toList();
-            } catch (IOException | CsvException e) {
-                throw new CarParkException("Failed to parse CSV data", e);
-            }
-        });
     }
 
     private Uni<List<CarParkInformation>> filterNonExistingCarParks(List<CarParkInformation> carParkInfos) {

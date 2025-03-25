@@ -1,6 +1,7 @@
 package com.example.carpark.service;
 
 import com.example.carpark.entity.CarPark;
+import com.example.carpark.model.CarParkInformation;
 import com.example.carpark.repository.CarParkRepository;
 import com.example.carpark.util.ConverterUtil;
 import io.quarkus.test.InjectMock;
@@ -37,31 +38,22 @@ class CarParkServiceTest {
     }
 
     @Test
-    void ingestCsvData_validCsvData() {
-        var csvContent = "carParkNo,address,xCoord,yCoord\nACB,BLK 270/271 ALBERT CENTRE BASEMENT CAR PARK,30314.7936,31490.4942";
+    void ingestCarParkInfos_validCarParkInfos() {
+        var carParkInfos = List.of(
+                CarParkInformation.fromCsvRow(new String[]{"ACB", "BLK 270/271 ALBERT CENTRE BASEMENT CAR PARK", "30314.7936", "31490.4942"})
+        );
 
         when(converterUtil.convertSVY21ToWGS84(30314.7936, 31490.4942)).thenReturn(new double[]{1.0, 1.0});
         when(carParkRepository.persist(anyList())).thenReturn(Uni.createFrom().voidItem());
 
-        carParkService.ingestCsvData(csvContent).await().indefinitely();
+        carParkService.ingestCarParkInfos(carParkInfos).await().indefinitely();
 
         verify(carParkRepository, times(1)).persist(anyList());
     }
 
     @Test
-    void ingestCsvData_emptyCsvData() {
-        var csvContent = "carParkNo,address,xCoord,yCoord\n";
-
-        carParkService.ingestCsvData(csvContent).await().indefinitely();
-
-        verify(carParkRepository, never()).persist(any(CarPark.class));
-    }
-
-    @Test
-    void ingestCsvData_invalidCsvData() {
-        var csvContent = "carParkNo,address,xCoord,yCoord\nACB,BLK 270/271 ALBERT CENTRE BASEMENT CAR PARK,invalid,invalid";
-
-        assertThrows(NumberFormatException.class, () -> carParkService.ingestCsvData(csvContent).await().indefinitely());
+    void ingestCarParkInfos_emptyCarParkInfos() {
+        carParkService.ingestCarParkInfos(List.of()).await().indefinitely();
 
         verify(carParkRepository, never()).persist(any(CarPark.class));
     }

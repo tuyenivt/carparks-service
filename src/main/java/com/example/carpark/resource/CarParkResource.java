@@ -2,6 +2,7 @@ package com.example.carpark.resource;
 
 import com.example.carpark.exception.CarParkException;
 import com.example.carpark.model.CarParkDto;
+import com.example.carpark.model.CarParkInformation;
 import com.example.carpark.service.CarParkService;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
@@ -17,9 +18,6 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.List;
 
 @Path("/v1/carparks")
@@ -44,14 +42,9 @@ public class CarParkResource {
     @APIResponse(responseCode = "202", description = "CSV data imported successfully")
     @APIResponse(responseCode = "500", description = "CSV import failed")
     public Uni<Response> importCsvData(@RestForm("file") FileUpload csvFile) {
-        return Uni.createFrom().item(() -> {
-                    try {
-                        return Files.readString(csvFile.uploadedFile(), StandardCharsets.UTF_8);
-                    } catch (IOException e) {
-                        throw new CarParkException("Failed to read CSV file", e);
-                    }
-                })
-                .flatMap(carParkService::ingestCsvData)
+        return Uni.createFrom()
+                .item(() -> CarParkInformation.fromCsvFile(csvFile.uploadedFile()))
+                .flatMap(carParkService::ingestCarParkInfos)
                 .map(result -> Response
                         .accepted()
                         .entity("CSV data imported successfully")
