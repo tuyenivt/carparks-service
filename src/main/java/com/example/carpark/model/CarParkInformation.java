@@ -10,9 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 @Data
@@ -37,9 +34,8 @@ public class CarParkInformation {
                 .build();
     }
 
-    public static List<CarParkInformation> fromCsvFile(Path csvFile) {
-        try (var csvReader = new CSVReaderBuilder(new StringReader(
-                Files.readString(csvFile, StandardCharsets.UTF_8))).withSkipLines(1).build()) {
+    public static List<CarParkInformation> fromCsvContent(String csvContent) {
+        try (var csvReader = new CSVReaderBuilder(new StringReader(csvContent)).withSkipLines(1).build()) {
             return csvReader.readAll().stream().map(CarParkInformation::fromCsvRow).toList();
         } catch (IOException | CsvException | IllegalArgumentException e) {
             throw new CarParkException("Failed to parse CSV data", e);

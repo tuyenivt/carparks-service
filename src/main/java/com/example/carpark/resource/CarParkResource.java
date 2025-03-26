@@ -6,6 +6,7 @@ import com.example.carpark.model.CarParkInformation;
 import com.example.carpark.service.CarParkService;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Vertx;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -18,6 +19,7 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Path("/v1/carparks")
@@ -28,10 +30,12 @@ public class CarParkResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(CarParkResource.class);
 
     private final CarParkService carParkService;
+    private final Vertx vertx;
 
     @Inject
-    public CarParkResource(CarParkService carParkService) {
+    public CarParkResource(CarParkService carParkService, Vertx vertx) {
         this.carParkService = carParkService;
+        this.vertx = vertx;
     }
 
     @POST
@@ -42,8 +46,9 @@ public class CarParkResource {
     @APIResponse(responseCode = "202", description = "CSV data imported successfully")
     @APIResponse(responseCode = "500", description = "CSV import failed")
     public Uni<Response> importCsvData(@RestForm("file") FileUpload csvFile) {
-        return Uni.createFrom()
-                .item(() -> CarParkInformation.fromCsvFile(csvFile.uploadedFile()))
+        return vertx.fileSystem()
+                .readFile(csvFile.uploadedFile().toString())
+                .map(buffer -> CarParkInformation.fromCsvContent(buffer.toString(StandardCharsets.UTF_8)))
                 .flatMap(carParkService::ingestCarParkInfos)
                 .map(result -> Response
                         .accepted()
