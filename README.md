@@ -102,30 +102,3 @@ Error Responses
 ```shell
 ./gradlew test
 ```
-
-## Thought Process - Analysis
-This application provides availability lots nearest distance car parks from the user's current location, a high-throughput application.<br/>
-
-For language and framework choice, quick comparison between Java and Go, Go is fast by its simplicity, goroutines, native build, and fast bootstrap.<br/>
-With modern Java, Java is also fast, although not as fast as Go, but with modern version and framework, Java speed is comparable.<br/>
-Java Virtual Thread comparable with goroutines and modern frameworks such as Quarkus, support native build (skip JIT) and fast bootstrap also (ms to a second).<br/>
-Java also has a large community, library, ecosystem, enterprise support, legacy integration, and mature testing support (Go good support test but more manual).<br/>
-I chose Java because I am familiar with Java over Go, but I still want the application to run fast, high-throughput adaptive, and fast bootstrap for horizontal scale cloud native.<br/>
-I choose Quarkus because it is fast, supports native build, supports GraalVM for native build, supports Java 21, and build-in reactive programming for high throughput.<br/>
-
-For database choice, this main feature is calculating the distance between 2 coordinates.<br/>
-Postgres with PostGIS or MySQL 8 Point also supports geospatial data, but MySQL 8 just basic support and is not fast and accurate comparable with Postgres with PostGIS, which is mature for geospatial data, supports geospatial query, indexing, and calculation.<br/>
-
-For car park information, we need an API for CSV data ingestion.<br/>
-The beta link to download CSV is deprecated, now it is: https://data.gov.sg/datasets/d_23f946fa557947f93a8043bbef41dd09/view<br/>
-I'll download and put CSV file at the project `data` folder for static load and demo.<br/>
-To convert SVY21 to WGS84, I found a library https://github.com/locationtech/proj4j?tab=readme-ov-file#basic-usage and will use it for conversion.<br/>
-
-For car park availability, we need a task scheduler for data updates via https://api.data.gov.sg/v1/transport/carpark-availability.<br/>
-
-We need an API endpoint service to calculate the nearest car park from the user's current location for the main feature.<br/>
-The URL parameters: `latitude` and `longitude`<br/>
-Return a `JSON array` of car parks `sorted` by `distance ascending` with the `total` and `available parking lots`.<br/>
-Return HTTP status code `400` if requests `missing latitude or longitude`<br/>
-Support pagination: `page` and `per_page`.<br/>
-More input validation: `latitude` and `longitude` range. Latitude values range from -90 to +90 degrees. Longitude ranges from 0° to 180° East and 0° to 180° West<br/>
